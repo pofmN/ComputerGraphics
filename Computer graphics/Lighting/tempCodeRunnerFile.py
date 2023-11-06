@@ -1,0 +1,1 @@
+sphere_red_rotation_angle
