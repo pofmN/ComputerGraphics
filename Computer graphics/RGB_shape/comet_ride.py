@@ -1,78 +1,21 @@
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
-import math
+import sys
 
 light_ambientY = [1.0, 1.0, 0.0, 1.0]
 light_ambientR = [1.0, 0.0, 0.0, 1.0]
 light_ambientB = [0.0, 0.5, 1.0, 1.0]
 
-# In the PyOpenGL library, the polar regions are already on the y-axis by default, so we don't need to rotate the sphere like in the C++ code.
+# Global variable for teapot rotation angle
+global_rotation_angle = 0
+big_global_rotation_angle = 0
 
-# Function to draw a wireframe sphere
-def myWireSphere(radius, slices, stacks):
-    glutWireSphere(radius, slices, stacks)
+# Global variable for teapot position
+pos_rotate = 0
 
-# Global variables for year and day
-year = 0
-day = 0
 
-# Function to display the solar system simulation
-def display():
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    glPushMatrix()
-
-    # Draw the sun: a yellow sphere of radius 1 centered at the origin
-    glMaterialfv(GL_FRONT, GL_AMBIENT, light_ambientB)
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, light_ambientB)
-    myWireSphere(1.0, 15, 15)
-
-    # Draw the planet: a blue sphere of radius 0.2, 2 units away from the sun, with a white "pole" for its axis
-    glRotatef(year, 0.0, 1.0, 0.0)
-    glTranslatef(4.5, 0.0, 0.0)
-    glRotatef(day, 0.0, 1.0, 0.0)
-    glMaterialfv(GL_FRONT, GL_AMBIENT, light_ambientY)
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, light_ambientY)
-    myWireSphere(0.2, 15, 15)
-
-    glColor3f(1, 1, 1)
-    glBegin(GL_LINES)
-    glVertex3f(0, -0.3, 0)
-    glVertex3f(0, 0.3, 0)
-    glEnd()
-
-    glPopMatrix()
-    glFlush()
-    glutSwapBuffers()
-
-# Function to update the view for animation
-u = 0.0
-du = 0.1
-
-def timer(v):
-    global u, year, day
-    u += du
-    day = (day + 1) % 360
-    year = (year + 2) % 360
-    glLoadIdentity()
-    gluLookAt(20 * math.cos(u/8.0) + 12, 5 * math.sin(u/8.0) + 1, 10 * math.cos(u/8.0) + 2, 0, 0, 0, 0, 1, 0)
-    glutPostRedisplay()
-    glutTimerFunc(1000/60, timer, v)
-
-# Function to reshape the window
-def reshape(w, h):
-    glViewport(0, 0, w, h)
-    glMatrixMode(GL_PROJECTION)
-    glLoadIdentity()
-    gluPerspective(7.5, 1.0, 1.0, 40.0)
-    glMatrixMode(GL_MODELVIEW)
-
-# Main function
-def main():
-    glutInit(sys.argv)
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
-    glutInitWindowSize(800, 600)
-    glutCreateWindow(b"nomnom")
+def init():
     mat_specular = [1.0, 1.0, 1.0, 1.0]
     mat_shininess = [50.0]
     light_position = [1.0, 1.0, 1.0, 0.0]
@@ -84,11 +27,111 @@ def main():
     glEnable(GL_LIGHT0)
     glEnable(GL_DEPTH_TEST)
     glClearColor(0.0, 0.0, 0.0, 0.0)
+    # glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE)
+
+
+def draw_small_global():
+    glPushMatrix()
+
+    glTranslatef(-2, 0, pos_rotate)
+    glRotatef(global_rotation_angle, 0, 1, 0)
+    glTranslatef(2, 0, -pos_rotate)
+    # glTranslatef(0, 0,  0)
+    # glRotatef(0.04, 1, 1, 0)
+    # glTranslatef(0, 0, 0)
+
+    glutWireSphere(0.4, 20, 20)
+    glColor3f(1, 0, 0)
+    glBegin(GL_LINES)
+    glVertex3f(0, 0.7, 0)
+    glVertex3f(0, -0.7, 0)
+    glEnd()
+    glPopMatrix()
+
+
+def draw_big_global():
+    glPushMatrix()
+    glRotatef(big_global_rotation_angle, 1, 0, 0)  # Rotate big_global
+    glutWireSphere(1.0, 30, 30)
+    glPopMatrix()
+
+
+def display():
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    glColor3f(1.0, 1.0, 1.0)
+    glLoadIdentity()
+
+    gluLookAt(0, 0, 6, 0, 0, 0, 0, 1, 0)
+
+    # Set material and lighting properties for the large sphere (blue)
+    glPushMatrix()
+    glTranslatef(0, 0, 0)
+
+    glMaterialfv(GL_FRONT, GL_AMBIENT, light_ambientR)
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, light_ambientR)
+    draw_big_global()
+    glPopMatrix()
+
+    # Set material and lighting properties for the second small sphere (yellow)
+    glPushMatrix()
+    glTranslatef(2, 0, 0)
+
+    glMaterialfv(GL_FRONT, GL_AMBIENT, light_ambientY)
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, light_ambientY)
+
+    draw_small_global()
+    glPopMatrix()
+
+    glutSwapBuffers()
+
+
+def reshape(width, height):
+    glViewport(0, 0, width, height)
+    glMatrixMode(GL_PROJECTION)
+    glClearColor(0.0, 0.0, 0.0, 0.0)
+    glLoadIdentity()
+    gluPerspective(65, (width / height), 1.0, 20.0)
+    glMatrixMode(GL_MODELVIEW)
+
+
+# glutIdleFunc(spin): function to redisplay many time
+def spin():
+    global global_rotation_angle, pos_rotate, big_global_rotation_angle
+    pos_rotate = 1
+    global_rotation_angle -= 0.04
+    big_global_rotation_angle += 0.04
+    glutPostRedisplay()
+
+
+def stop():
+    global global_rotation_angle, pos_rotate
+    pos_rotate = 0
+    global_rotation_angle = 0
+    glutPostRedisplay()
+
+
+def keyboard(key, x, y):
+    global global_rotation_angle
+
+    if key == b'a':
+        glutIdleFunc(spin)
+    elif key == b's':
+        glutIdleFunc(stop)
+
+    glutPostRedisplay()
+
+
+def main():
+    glutInit(sys.argv)
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)
+    glutInitWindowSize(800, 600)
+    glutCreateWindow("Sphere")
+    init()
     glutDisplayFunc(display)
-    glutReshapeFunc(reshape(800,600))
-    glutTimerFunc(1000, timer, 0)
-    glEnable(GL_DEPTH_TEST)
+    glutReshapeFunc(reshape)
+    glutKeyboardFunc(keyboard)  # Register the keyboard callback
     glutMainLoop()
+
 
 if __name__ == "__main__":
     main()
